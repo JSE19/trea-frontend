@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const eventCatalog = {
@@ -25,6 +25,7 @@ type TransactionState = "idle" | "pending" | "confirmed";
 
 export default function CheckoutPage() {
   const params = useParams<{ id?: string }>();
+  const router = useRouter();
   const event =
     eventCatalog[(params?.id as keyof typeof eventCatalog) ?? "meridian-2025"] ??
     eventCatalog["meridian-2025"];
@@ -49,7 +50,7 @@ export default function CheckoutPage() {
   }, []);
 
   const handleConfirm = () => {
-    if (transactionState === "pending") return;
+    if (transactionState === "pending" || transactionState === "confirmed") return;
 
     setTransactionState("pending");
     if (timeoutRef.current) {
@@ -58,6 +59,9 @@ export default function CheckoutPage() {
 
     timeoutRef.current = window.setTimeout(() => {
       setTransactionState("confirmed");
+      window.setTimeout(() => {
+        router.push(`/events/${event.id}/confirmation`);
+      }, 500);
     }, 2200);
   };
 

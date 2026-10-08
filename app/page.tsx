@@ -1,156 +1,327 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/Card";
-import { Modal } from "@/components/Modal";
+import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
 
-const wallets = [
-  { name: "Freighter Wallet", badge: "Recommended", type: "browser extension & mobile" },
-  { name: "Albedo", badge: null, type: "web-based Stellar signing" },
-  { name: "xBull Wallet", badge: null, type: "cross-platform Stellar wallet" },
-  { name: "Lobstr", badge: null, type: "mobile wallet with QR connect" },
+type EventItem = {
+  title: string;
+  date: string;
+  category: string;
+  price: string;
+  badge?: string;
+  badgeClassName?: string;
+  location: string;
+  description: string;
+  image: string;
+  capacity: string;
+  progress: number;
+  accentClassName?: string;
+  priceLabel: string;
+  actionLabel: string;
+  tag: string;
+};
+
+const filters = [
+  { label: "All", value: "all" },
+  { label: "Music", value: "music" },
+  { label: "Tech", value: "tech" },
+  { label: "Weekend", value: "weekend" },
+  { label: "Free", value: "free" },
 ];
 
+const events: EventItem[] = [
+  {
+    title: "Stellar Meridian Night Afterparty",
+    date: "Oct 13, 2025",
+    category: "music weekend paid",
+    price: "25 XLM",
+    badge: "VIP ACCESS",
+    badgeClassName: "bg-[#ff5451]/25 text-[#ffb3ad]",
+    location: "Marina Bay, Singapore",
+    description:
+      "A high-fidelity bass experience with international headline DJs, open ledger bar, and NFT guest credentials.",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAx_i3H4XkedRxS4t3UKmMjiq8Ir7UhgCqxF9g-8ByZXz1WERh85Lk79422StBtI7cxt_Ox3Rzbk_hVQVMnoQOC4pb0-qC9HMc40Z3d3hEBzaJw1jemur83PZyh0I7SxpINdmbEqtz3F1r0FGwRTZNHpOIMv-nHpDNBh43cxrOXy8uoZLOzCO0sZuEZfT8R2sQd1RyJ_IVOEm2nblFR8xzSj-y33YjHM2eWYSCf6LcDXBQqZCGShDPg",
+    capacity: "320 / 400 Registered",
+    progress: 80,
+    accentClassName: "from-[#ff5451] to-[#ff8a80]",
+    priceLabel: "Ticket Price",
+    actionLabel: "Get Pass",
+    tag: "paid",
+  },
+  {
+    title: "Smart Contracts with Soroban Workshop",
+    date: "Nov 02, 2025",
+    category: "tech free",
+    price: "Free",
+    badge: "Hybrid",
+    badgeClassName: "bg-white/10 text-[#e5e2e1]",
+    location: "Virtual & NYC In-Person",
+    description:
+      "Hands-on developer masterclass: build, deploy, and audit Rust-based Soroban contracts with live testnet mentorship.",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAjRBRZLRcefetia273W4srtIJXJJKsyFdzjOrH7x--dhAnJxrz205L316NzrJBsuuXdG8B6BiYmjnLkUWaWZk1-x0WKPlAj5qufksXIK9ifyqYpdce68sVBlHJc8YONKwLmVwkjMPK-c0rZbxvQzsOBnOO9WwQ7-yHpF_YqQ7tafyzmFxfDkq4ScEKboCZbjDmdI9q0D8s10WeG7S8GXbsiryU0GAK4JQSZ7cguqbPdeGKUvnEC-6j",
+    capacity: "184 / 200 Registered",
+    progress: 92,
+    accentClassName: "from-[#ffb3ad] to-[#ffb3b6]",
+    priceLabel: "Admission",
+    actionLabel: "Register",
+    tag: "free",
+  },
+  {
+    title: "Decentralized Beats Rooftop Rave",
+    date: "Nov 18, 2025",
+    category: "music weekend paid",
+    price: "80 USDC",
+    badge: "ALMOST FULL",
+    badgeClassName: "bg-[#ffb4ab] text-[#690005]",
+    location: "Kreuzberg, Berlin",
+    description:
+      "A seamless intersection of sonic modular synths and zero-knowledge badge entry overlooking the Berlin canal.",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCkXb72YVs5DXpll9LZ-Npyk69jsrh3_YHgRE7bhw7mLCwX7gD7x-C09-G6H0xSC_eoMZedEEBP9AI6nUV4u3N3c0E4FOP3pr4P1pbKtvYhpyU2cW4VIy-U4OgniTiLoX2qBvpSsF11g_ts4mmG-JsI4f1n9uLrV7k_RAOyZmlAhNc3K8NDZgq4uAGqfIwDvs6m5S-swA4SG2HTX440mCLIw_6SGI_81yxI-bFyKfVTtQLjV7P-ps70",
+    capacity: "490 / 500 Registered",
+    progress: 98,
+    accentClassName: "from-[#ffb3b6] to-[#ff5451]",
+    priceLabel: "Direct XLM/USDC",
+    actionLabel: "Quick Pass",
+    tag: "paid",
+  },
+];
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <circle cx="11" cy="11" r="5.5" />
+      <path d="M16 16L20 20" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ScanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="4" rx="1.2" />
+      <rect x="3" y="14" width="4" height="7" rx="1.2" />
+      <path d="M14 10.5h7v3.5h-7M10 14h-7v7h7M14 14h3.5v7H14M20 17.5v3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MapPinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function Home() {
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [selectedWallet, setSelectedWallet] = useState(wallets[0].name);
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const filteredEvents = useMemo(() => {
+    const normalizedQuery = search.trim().toLowerCase();
+
+    return events.filter((event) => {
+      const matchesFilter =
+        activeFilter === "all" ||
+        event.category.toLowerCase().includes(activeFilter.toLowerCase()) ||
+        event.tag.toLowerCase() === activeFilter.toLowerCase();
+
+      if (!normalizedQuery) return matchesFilter;
+
+      const haystack = [
+        event.title,
+        event.description,
+        event.location,
+        event.category,
+        event.tag,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return matchesFilter && haystack.includes(normalizedQuery);
+    });
+  }, [activeFilter, search]);
 
   return (
-    <main className="min-h-screen bg-black px-6 py-10 text-white">
-      <div className="mx-auto max-w-lg space-y-6">
-        <div className="mb-6 flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-              Discover
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-              Upcoming Experiences
-            </h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsWalletModalOpen(true)}
-            className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-white/20 hover:bg-white/5"
-          >
-            Connect wallet
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#131313] text-[#e5e2e1]">
+      <Navbar />
 
-        <Card
-          imageSrc="https://lh3.googleusercontent.com/aida-public/AB6AXuAx_i3H4XkedRxS4t3UKmMjiq8Ir7UhgCqxF9g-8ByZXz1WERh85Lk79422StBtI7cxt_Ox3Rzbk_hVQVMnoQOC4pb0-qC9HMc40Z3d3hEBzaJw1jemur83PZyh0I7SxpINdmbEqtz3F1r0FGwRTZNHpOIMv-nHpDNBh43cxrOXy8uoZLOzCO0sZuEZfT8R2sQd1RyJ_IVOEm2nblFR8xzSj-y33YjHM2eWYSCf6LcDXBQqZCGShDPg"
-          imageAlt="Luxury rooftop event"
-          title="Stellar Meridian Night Afterparty"
-          metadata={
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-300">
-              <span className="rounded-md bg-zinc-800/90 px-2 py-1">Oct 13, 2025</span>
-              <span className="rounded-md bg-rose-500/15 px-2 py-1 text-rose-300">
-                VIP Access
-              </span>
-            </div>
-          }
-          action={
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-                  Ticket Price
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-rose-300">25 XLM</p>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+        <section className="w-full pb-6 pt-2">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#1d1d1d] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all focus-within:shadow-[0_0_0_1px_rgba(255,84,81,0.4),0_0_24px_rgba(255,84,81,0.15)]">
+              <div className="flex items-center gap-2 px-4 py-3 text-[#a7a0a0]">
+                <SearchIcon />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  aria-label="Search events"
+                  placeholder="Search by artist, venue, or Soroban tag..."
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[#e5e2e1] placeholder:text-[#8f8a89] outline-none"
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                    className="rounded-full p-1 text-[#a7a0a0] transition hover:text-[#e5e2e1]"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => setIsWalletModalOpen(true)}
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
-              >
-                Get Pass
-              </button>
-            </div>
-          }
-        >
-          <p className="leading-6 text-zinc-300">
-            A high-fidelity bass experience with international headline DJs, open ledger bar,
-            and NFT guest credentials.
-          </p>
-
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span>Capacity</span>
-              <span className="font-medium text-zinc-200">320 / 400 Registered</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-zinc-700">
-              <div className="h-full w-[80%] rounded-full bg-gradient-to-r from-rose-500 to-red-400" />
-            </div>
+            <button
+              type="button"
+              aria-label="Quick scan"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#1f1f1f] text-[#ffb3ad] shadow-[0_10px_20px_rgba(0,0,0,0.22)] transition hover:bg-[#2a2a2a]"
+            >
+              <ScanIcon />
+            </button>
           </div>
-        </Card>
-      </div>
+        </section>
 
-      <Modal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-        title="Connect Stellar Wallet"
-        description="Connect your wallet to sign on-chain registrations, hold cryptographic event tickets, and unlock attendee perks."
-      >
-        <div className="space-y-3" role="radiogroup" aria-label="Stellar wallet providers">
-          {wallets.map((wallet) => {
-            const active = wallet.name === selectedWallet;
+        <section className="pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {filters.map((filter) => {
+              const active = filter.value === activeFilter;
 
-            return (
-              <button
-                key={wallet.name}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setSelectedWallet(wallet.name)}
-                className={[
-                  "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition",
-                  active
-                    ? "border-rose-400/60 bg-[#2a2a2a]"
-                    : "border-transparent bg-[#262626] hover:bg-[#2d2d2d]",
-                ].join(" ")}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#101010] text-lg font-semibold text-zinc-200">
-                    {wallet.name.slice(0, 1)}
-                  </div>
+              return (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.value)}
+                  className={[
+                    "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] transition",
+                    active
+                      ? "bg-[#ff5451]/20 text-[#ffd6d1] shadow-[0_0_16px_rgba(255,84,81,0.2)]"
+                      : "bg-[#242424] text-[#a7a0a0] hover:bg-[#2c2c2c]",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "h-1.5 w-1.5 rounded-full",
+                      active ? "bg-[#ffb3ad]" : "bg-[#7d7675]",
+                    ].join(" ")}
+                  />
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-lg font-semibold text-white">{wallet.name}</span>
-                      {wallet.badge ? (
-                        <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-rose-300">
-                          {wallet.badge}
+        <section className="pt-4">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-[#f3f0ee] sm:text-3xl">
+                Upcoming Experiences
+              </h1>
+              <p className="mt-1 text-sm text-[#a7a0a0]">
+                Cryptographically backed by Soroban state proofs
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.12em] text-[#ffb3ad] transition hover:text-[#ffd6d1]"
+            >
+              View All
+              <ChevronIcon />
+            </button>
+          </div>
+
+          {filteredEvents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-[#1b1b1b] p-10 text-center text-[#a7a0a0]">
+              No events match your search.
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {filteredEvents.map((event) => (
+                <Card
+                  key={event.title}
+                  imageSrc={event.image}
+                  imageAlt={event.title}
+                  title={event.title}
+                  className="h-full bg-[#1e1d1d]"
+                  metadata={
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[#d7d2cf]">
+                      <span className="rounded-md bg-[#2a2a2a] px-2 py-1 text-[#f3f0ee]">
+                        {event.date}
+                      </span>
+                      {event.badge ? (
+                        <span className={['rounded-md px-2 py-1', event.badgeClassName].join(" ")}>
+                          {event.badge}
                         </span>
                       ) : null}
                     </div>
-                    <span className="block truncate text-sm text-zinc-400">{wallet.type}</span>
-                  </div>
-                </div>
+                  }
+                  action={
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#8f8a89]">
+                          {event.priceLabel}
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold text-[#ffb3ad]">{event.price}</p>
+                      </div>
 
-                <span
-                  className={[
-                    "inline-flex h-5 w-5 items-center justify-center rounded-full border",
-                    active ? "border-rose-400 bg-rose-400" : "border-zinc-500 bg-transparent",
-                  ].join(" ")}
+                      <button
+                        type="button"
+                        className="rounded-lg bg-[#2a2a2a] px-4 py-2 text-sm font-medium text-[#f3f0ee] transition hover:bg-[#343434]"
+                      >
+                        {event.actionLabel}
+                      </button>
+                    </div>
+                  }
                 >
-                  <span className="h-2 w-2 rounded-full bg-[#1b1b1b]" />
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="space-y-3">
+                    <p className="leading-6 text-[#cfc9c8]">{event.description}</p>
 
-        <div className="mt-5 rounded-lg border border-white/10 bg-[#121212] p-3 text-sm text-zinc-300">
-          By connecting, you agree to Trea&apos;s Terms and Stellar network gas fees (~0.00001 XLM).
-        </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-[#a7a0a0]">
+                        <span>Capacity</span>
+                        <span className="font-medium text-[#f3f0ee]">{event.capacity}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-[#2e2d2d]">
+                        <div
+                          className={[
+                            "h-full rounded-full bg-gradient-to-r",
+                            event.accentClassName,
+                          ].join(" ")}
+                          style={{ width: `${event.progress}%` }}
+                        />
+                      </div>
+                    </div>
 
-        <button
-          type="button"
-          onClick={() => setIsWalletModalOpen(false)}
-          className="mt-5 flex w-full items-center justify-center rounded-xl bg-rose-400 px-4 py-3 text-base font-semibold text-[#2a0000] transition hover:bg-rose-300"
-        >
-          Connect {selectedWallet}
-        </button>
-      </Modal>
-    </main>
+                    <div className="flex items-center gap-1.5 pt-1 text-xs text-[#bcb5b3]">
+                      <MapPinIcon />
+                      <span>{event.location}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

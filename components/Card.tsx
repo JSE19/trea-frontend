@@ -7,6 +7,8 @@ type CardProps = PropsWithChildren<{
   metadata?: ReactNode;
   action?: ReactNode;
   className?: string;
+  variant?: "default" | "compact";
+  topAccentClassName?: string;
 }>;
 
 export function Card({
@@ -16,8 +18,60 @@ export function Card({
   metadata,
   action,
   className = "",
+  variant = "default",
+  topAccentClassName,
   children,
 }: CardProps) {
+  if (variant === "compact") {
+    return (
+      <article
+        className={[
+          "group w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1d1d1d] shadow-[0_18px_38px_rgba(0,0,0,0.45)]",
+          className,
+        ].join(" ")}
+      >
+        {topAccentClassName ? (
+          <div
+            className={[
+              "h-1.5 w-full bg-gradient-to-r",
+              topAccentClassName,
+            ].join(" ")}
+          />
+        ) : null}
+
+        <div className="flex flex-col gap-4 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {metadata ? <div>{metadata}</div> : null}
+
+              <h3 className="line-clamp-2 text-xl font-semibold tracking-tight text-white">
+                {title}
+              </h3>
+            </div>
+
+            {imageSrc ? (
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+                <img
+                  src={imageSrc}
+                  alt={imageAlt}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            ) : null}
+          </div>
+
+          {children ? (
+            <div className="flex flex-col gap-4 text-sm text-zinc-300">
+              {children}
+            </div>
+          ) : null}
+
+          {action ? <div>{action}</div> : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article
       className={[

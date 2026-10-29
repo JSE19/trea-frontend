@@ -2,8 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
+import { FieldError } from "@/components/FieldError";
+import {
+  createEventSchema,
+  type CreateEventFormValues,
+  type CreateEventPayload,
+  type PricingModel,
+  type VenueEnvironment,
+} from "@/lib/schemas/createEvent";
 
 const TREA_LOGO =
   "https://lh3.googleusercontent.com/aida/AEtjO1Ww40inGHjn46emaG6LBQY79iEHtmTgVhg8v6vqY3WwChhc1qPp14wKDGsNMV36DVrsONIOD119spGawqKWRz6G9ezqfkZG9Na8fLhJHqaSuiuFSzehriQ9wfKuc5IdOV51Mp0ySF0_DLf44uYaZhOiHI1wss09H5bmiTM2-_JuRFmEVeA8jEzQiwh8o5Jde_vxkZ_jg8IK7UjiwA612NzvF_fX6VTEXUqhAXocRyRj6AluZQHM18yF0jw";
@@ -14,9 +24,6 @@ const PROFILE_IMAGE =
 const DEFAULT_COVER_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBqvfpVhRJRga-5_f3zyWqVZbEwIMDw5eCRlpoZZ7EMAgiX-Bkxiinf8pgXn39Cg1WwXx5N3cKWmFvz7EOAprSx3bDKWdadSR2UGJX6zJ21VCGhtjLS6sua5B8FXeuE4HdltllRcIRHokXTc2Dpyi9Mk2bFJgr6MNaK1rlz_NALGZtzKMvllUK2tm_16rg2UL-n-cI1RAyia_x2j7eWcSw_cfXrF0Eh_lTO-Gp6uus246BwELHBmxrU";
 
-type VenueEnvironment = "in-person" | "virtual" | "hybrid";
-type PricingModel = "free" | "paid";
-type TokenCurrency = "XLM" | "USDC";
 type BottomNavItem = {
   icon: string;
   label: string;
@@ -25,26 +32,7 @@ type BottomNavItem = {
   featured?: boolean;
 };
 
-type EventFormState = {
-  title: string;
-  description: string;
-  coverImageName: string;
-  coverImageUrl: string;
-  startsAt: string;
-  endsAt: string;
-  venue: VenueEnvironment;
-  location: string;
-  capacity: string;
-  pricing: PricingModel;
-  price: string;
-  currency: TokenCurrency;
-  acceptedXlm: boolean;
-  acceptedUsdc: boolean;
-  selfRefund: boolean;
-  refundDeadline: string;
-};
-
-const initialFormState: EventFormState = {
+const initialFormState: CreateEventFormValues = {
   title: "Stellar Rust & Soroban Developers Meetup",
   description:
     "Join world-class engineers scaling decentralized finance on Stellar. We will explore WASM bytecode optimization, Soroban SDK v21 patterns, and state archival lifecycles.",
@@ -242,11 +230,25 @@ function BottomNav() {
 }
 
 export default function CreateEventPage() {
-  const [form, setForm] = useState<EventFormState>(initialFormState);
+  const {
+    control,
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateEventFormValues, unknown, CreateEventPayload>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: initialFormState,
+    mode: "onTouched",
+  });
   const [notice, setNotice] = useState<string | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const descriptionField = register("description");
+  const pricing = useWatch({ control, name: "pricing" });
+  const coverImageUrl = useWatch({ control, name: "coverImageUrl" });
+  const coverImageName = useWatch({ control, name: "coverImageName" });
 
   useEffect(() => {
     return () => {
@@ -256,13 +258,11 @@ export default function CreateEventPage() {
     };
   }, []);
 
-  function updateField<K extends keyof EventFormState>(
-    key: K,
-    value: EventFormState[K],
-  ) {
-    setForm((current) => ({ ...current, [key]: value }));
-    setNotice(null);
-  }
+  useEffect(() => {
+    if (pricing === "free") {
+      setValue("price", "0", { shouldValidate: true });
+    }
+  }, [pricing, setValue]);
 
   function insertMarkdown(prefix: string, suffix: string, placeholder: string) {
     const textarea = descriptionRef.current;
@@ -279,7 +279,10 @@ export default function CreateEventPage() {
       textarea.value.slice(end),
     ].join("");
 
-    updateField("description", nextValue);
+    setValue("description", nextValue, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
 
     const selectionStart = start + prefix.length;
     window.requestAnimationFrame(() => {
@@ -299,12 +302,11 @@ export default function CreateEventPage() {
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
 
-    setForm((current) => ({
-      ...current,
-      coverImageName: file.name,
-      coverImageUrl: objectUrl,
-    }));
-    setNotice(null);
+    setValue("coverImageName", file.name, { shouldDirty: true });
+    setValue("coverImageUrl", objectUrl, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     event.target.value = "";
   }
 
@@ -312,9 +314,12 @@ export default function CreateEventPage() {
     setNotice("Draft saved locally. On-chain publishing is not connected yet.");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function onValid() {
     setNotice("Event details captured. On-chain publishing is not connected yet.");
+  }
+
+  function onInvalid() {
+    setNotice("Please fix the highlighted fields before publishing.");
   }
 
   return (
@@ -350,7 +355,8 @@ export default function CreateEventPage() {
 
       <main className="relative flex min-h-screen flex-col bg-[#131313] pt-16 pb-24">
         <form
-          onSubmit={handleSubmit}
+          noValidate
+          onSubmit={handleSubmit(onValid, onInvalid)}
           className="mx-auto flex w-full max-w-[560px] flex-col gap-5 px-4 pb-32 pt-4 sm:px-6"
         >
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -408,16 +414,25 @@ export default function CreateEventPage() {
               >
                 Event Title *
               </label>
-              <div className="flex items-center rounded-lg bg-[#0e0e0e] p-2 focus-within:ring-1 focus-within:ring-[#ff5451]">
+              <div
+                className={[
+                  "flex items-center rounded-lg bg-[#0e0e0e] p-2 focus-within:ring-1",
+                  errors.title
+                    ? "ring-1 ring-[#93000a] focus-within:ring-[#93000a]"
+                    : "focus-within:ring-[#ff5451]",
+                ].join(" ")}
+              >
                 <input
                   id="event-title"
                   type="text"
-                  value={form.title}
-                  onChange={(event) => updateField("title", event.target.value)}
+                  {...register("title")}
+                  aria-invalid={Boolean(errors.title)}
+                  aria-describedby={errors.title ? "event-title-error" : undefined}
                   placeholder="e.g. Stellar Rust & Soroban Developers Meetup"
                   className="w-full bg-transparent text-[15px] text-[#f3f0ee] placeholder:text-[#3a3939] focus:outline-none"
                 />
               </div>
+              <FieldError id="event-title-error" message={errors.title?.message} />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -457,16 +472,24 @@ export default function CreateEventPage() {
                 </div>
                 <textarea
                   id="event-description"
-                  ref={descriptionRef}
+                  {...descriptionField}
+                  ref={(element) => {
+                    descriptionField.ref(element);
+                    descriptionRef.current = element;
+                  }}
                   rows={4}
-                  value={form.description}
-                  onChange={(event) =>
-                    updateField("description", event.target.value)
+                  aria-invalid={Boolean(errors.description)}
+                  aria-describedby={
+                    errors.description ? "event-description-error" : undefined
                   }
                   placeholder="Provide event schedule, speaker lineups, prerequisites, and workshop goals..."
                   className="w-full resize-none bg-transparent p-2 text-[15px] text-[#f3f0ee] placeholder:text-[#3a3939] focus:outline-none"
                 />
               </div>
+              <FieldError
+                id="event-description-error"
+                message={errors.description?.message}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -475,7 +498,7 @@ export default function CreateEventPage() {
               </span>
               <div className="group relative w-full overflow-hidden rounded-xl bg-[#0e0e0e]">
                 <img
-                  src={form.coverImageUrl}
+                  src={coverImageUrl}
                   alt="Event cover preview"
                   className="h-36 w-full object-cover opacity-80 transition-opacity group-hover:opacity-95"
                 />
@@ -486,7 +509,7 @@ export default function CreateEventPage() {
                       image
                     </span>
                     <span className="truncate font-mono text-[11px] text-[#f3f0ee]">
-                      {form.coverImageName}
+                      {coverImageName}
                     </span>
                   </div>
                   <Button
@@ -518,12 +541,22 @@ export default function CreateEventPage() {
                 id="cover-image-url"
                 type="text"
                 inputMode="url"
-                value={form.coverImageUrl}
-                onChange={(event) =>
-                  updateField("coverImageUrl", event.target.value)
+                {...register("coverImageUrl")}
+                aria-invalid={Boolean(errors.coverImageUrl)}
+                aria-describedby={
+                  errors.coverImageUrl ? "cover-image-url-error" : undefined
                 }
                 placeholder="https://example.com/cover.jpg"
-                className="w-full rounded-lg bg-[#0e0e0e] p-2 text-[12px] text-[#e5e2e1] placeholder:text-[#3a3939] focus:outline-none focus:ring-1 focus:ring-[#ff5451]"
+                className={[
+                  "w-full rounded-lg bg-[#0e0e0e] p-2 text-[12px] text-[#e5e2e1] placeholder:text-[#3a3939] focus:outline-none focus:ring-1",
+                  errors.coverImageUrl
+                    ? "ring-1 ring-[#93000a] focus:ring-[#93000a]"
+                    : "focus:ring-[#ff5451]",
+                ].join(" ")}
+              />
+              <FieldError
+                id="cover-image-url-error"
+                message={errors.coverImageUrl?.message}
               />
             </div>
           </FormSection>
@@ -537,16 +570,22 @@ export default function CreateEventPage() {
                 >
                   Starts On
                 </label>
-                <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+                <div
+                  className={[
+                    "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                    errors.startsAt ? "ring-1 ring-[#93000a]" : "",
+                  ].join(" ")}
+                >
                   <span className="material-symbols-outlined text-[18px] text-[#c6c6c7]">
                     event
                   </span>
                   <input
                     id="starts-at"
                     type="datetime-local"
-                    value={form.startsAt}
-                    onChange={(event) =>
-                      updateField("startsAt", event.target.value)
+                    {...register("startsAt")}
+                    aria-invalid={Boolean(errors.startsAt)}
+                    aria-describedby={
+                      errors.startsAt ? "starts-at-error" : undefined
                     }
                     className="min-w-0 w-full bg-transparent font-mono text-[12px] text-[#f3f0ee] [color-scheme:dark] focus:outline-none"
                   />
@@ -554,6 +593,7 @@ export default function CreateEventPage() {
                     UTC
                   </span>
                 </div>
+                <FieldError id="starts-at-error" message={errors.startsAt?.message} />
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -563,23 +603,28 @@ export default function CreateEventPage() {
                 >
                   Ends On
                 </label>
-                <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+                <div
+                  className={[
+                    "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                    errors.endsAt ? "ring-1 ring-[#93000a]" : "",
+                  ].join(" ")}
+                >
                   <span className="material-symbols-outlined text-[18px] text-[#c6c6c7]">
                     event_available
                   </span>
                   <input
                     id="ends-at"
                     type="datetime-local"
-                    value={form.endsAt}
-                    onChange={(event) =>
-                      updateField("endsAt", event.target.value)
-                    }
+                    {...register("endsAt")}
+                    aria-invalid={Boolean(errors.endsAt)}
+                    aria-describedby={errors.endsAt ? "ends-at-error" : undefined}
                     className="min-w-0 w-full bg-transparent font-mono text-[12px] text-[#f3f0ee] [color-scheme:dark] focus:outline-none"
                   />
                   <span className="shrink-0 font-mono text-[10px] text-[#a7a0a0]">
                     UTC
                   </span>
                 </div>
+                <FieldError id="ends-at-error" message={errors.endsAt?.message} />
               </div>
             </div>
 
@@ -587,13 +632,20 @@ export default function CreateEventPage() {
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#c6c6c7]">
                 Venue Environment
               </span>
-              <SegmentedControl
+              <Controller
+                control={control}
                 name="venue"
-                value={form.venue}
-                options={venueOptions}
-                columns={3}
-                onChange={(value) => updateField("venue", value)}
+                render={({ field }) => (
+                  <SegmentedControl
+                    name="venue"
+                    value={field.value}
+                    options={venueOptions}
+                    columns={3}
+                    onChange={(value) => field.onChange(value)}
+                  />
+                )}
               />
+              <FieldError id="venue-error" message={errors.venue?.message} />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -603,21 +655,28 @@ export default function CreateEventPage() {
               >
                 Physical Hub & Live Stream URL
               </label>
-              <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+              <div
+                className={[
+                  "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                  errors.location ? "ring-1 ring-[#93000a]" : "",
+                ].join(" ")}
+              >
                 <span className="material-symbols-outlined text-[18px] text-[#c6c6c7]">
                   pin_drop
                 </span>
                 <input
                   id="location"
                   type="text"
-                  value={form.location}
-                  onChange={(event) =>
-                    updateField("location", event.target.value)
+                  {...register("location")}
+                  aria-invalid={Boolean(errors.location)}
+                  aria-describedby={
+                    errors.location ? "location-error" : undefined
                   }
                   placeholder="Venue address or stream URL"
                   className="w-full bg-transparent text-[13px] text-[#f3f0ee] placeholder:text-[#3a3939] focus:outline-none"
                 />
               </div>
+              <FieldError id="location-error" message={errors.location?.message} />
             </div>
           </FormSection>
 
@@ -626,13 +685,20 @@ export default function CreateEventPage() {
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#c6c6c7]">
                 Pricing Model
               </span>
-              <SegmentedControl
+              <Controller
+                control={control}
                 name="pricing"
-                value={form.pricing}
-                options={pricingOptions}
-                columns={2}
-                onChange={(value) => updateField("pricing", value)}
+                render={({ field }) => (
+                  <SegmentedControl
+                    name="pricing"
+                    value={field.value}
+                    options={pricingOptions}
+                    columns={2}
+                    onChange={(value) => field.onChange(value)}
+                  />
+                )}
               />
+              <FieldError id="pricing-error" message={errors.pricing?.message} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -646,7 +712,8 @@ export default function CreateEventPage() {
                 <div
                   className={[
                     "flex items-center rounded-lg bg-[#0e0e0e] p-2",
-                    form.pricing === "free" ? "opacity-50" : "",
+                    pricing === "free" ? "opacity-50" : "",
+                    errors.price ? "ring-1 ring-[#93000a]" : "",
                   ].join(" ")}
                 >
                   <input
@@ -654,14 +721,19 @@ export default function CreateEventPage() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={form.pricing === "free" ? "0" : form.price}
-                    onChange={(event) =>
-                      updateField("price", event.target.value)
+                    {...register("price")}
+                    readOnly={pricing === "free"}
+                    aria-invalid={Boolean(errors.price)}
+                    aria-describedby={
+                      errors.price ? "ticket-price-error" : undefined
                     }
-                    disabled={form.pricing === "free"}
-                    className="w-full bg-transparent text-[18px] font-semibold text-[#f3f0ee] focus:outline-none disabled:cursor-not-allowed"
+                    className="w-full bg-transparent text-[18px] font-semibold text-[#f3f0ee] focus:outline-none read-only:cursor-not-allowed"
                   />
                 </div>
+                <FieldError
+                  id="ticket-price-error"
+                  message={errors.price?.message}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -671,16 +743,19 @@ export default function CreateEventPage() {
                 >
                   Token Currency
                 </label>
-                <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+                <div
+                  className={[
+                    "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                    errors.currency ? "ring-1 ring-[#93000a]" : "",
+                  ].join(" ")}
+                >
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#ff5451]" />
                   <select
                     id="token-currency"
-                    value={form.currency}
-                    onChange={(event) =>
-                      updateField(
-                        "currency",
-                        event.target.value as TokenCurrency,
-                      )
+                    {...register("currency")}
+                    aria-invalid={Boolean(errors.currency)}
+                    aria-describedby={
+                      errors.currency ? "token-currency-error" : undefined
                     }
                     className="w-full appearance-none bg-transparent font-mono text-[12px] text-[#f3f0ee] focus:outline-none"
                   >
@@ -695,6 +770,10 @@ export default function CreateEventPage() {
                     expand_more
                   </span>
                 </div>
+                <FieldError
+                  id="token-currency-error"
+                  message={errors.currency?.message}
+                />
               </div>
             </div>
 
@@ -710,7 +789,12 @@ export default function CreateEventPage() {
                   Max Cap
                 </span>
               </div>
-              <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+              <div
+                className={[
+                  "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                  errors.capacity ? "ring-1 ring-[#93000a]" : "",
+                ].join(" ")}
+              >
                 <span className="material-symbols-outlined text-[18px] text-[#c6c6c7]">
                   confirmation_number
                 </span>
@@ -718,9 +802,10 @@ export default function CreateEventPage() {
                   id="capacity"
                   type="number"
                   min="1"
-                  value={form.capacity}
-                  onChange={(event) =>
-                    updateField("capacity", event.target.value)
+                  {...register("capacity")}
+                  aria-invalid={Boolean(errors.capacity)}
+                  aria-describedby={
+                    errors.capacity ? "capacity-error" : undefined
                   }
                   className="min-w-0 w-full bg-transparent text-[15px] text-[#f3f0ee] focus:outline-none"
                 />
@@ -728,6 +813,7 @@ export default function CreateEventPage() {
                   tickets
                 </span>
               </div>
+              <FieldError id="capacity-error" message={errors.capacity?.message} />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -735,88 +821,116 @@ export default function CreateEventPage() {
                 Accepted Stellar Assets
               </span>
               <div className="grid grid-cols-2 gap-1.5">
-                <label className="cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.acceptedXlm}
-                    onChange={(event) =>
-                      updateField("acceptedXlm", event.target.checked)
-                    }
-                    className="peer sr-only"
-                  />
-                  <span
-                    className={[
-                      "flex items-center justify-between gap-2 rounded-lg p-2.5 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451]",
-                      form.acceptedXlm
-                        ? "bg-[#353534] text-[#f3f0ee]"
-                        : "bg-[#201f1f] text-[#c6c6c7]",
-                    ].join(" ")}
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
+                <Controller
+                  control={control}
+                  name="acceptedXlm"
+                  render={({ field }) => (
+                    <label className="cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(event) =>
+                          field.onChange(event.target.checked)
+                        }
+                        aria-invalid={Boolean(errors.acceptedXlm)}
+                        aria-describedby={
+                          errors.acceptedXlm ? "accepted-assets-error" : undefined
+                        }
+                        className="peer sr-only"
+                      />
                       <span
                         className={[
-                          "material-symbols-outlined text-[18px]",
-                          form.acceptedXlm ? "text-[#ff5451]" : "text-[#c6c6c7]",
+                          "flex items-center justify-between gap-2 rounded-lg p-2.5 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451]",
+                          field.value
+                            ? "bg-[#353534] text-[#f3f0ee]"
+                            : "bg-[#201f1f] text-[#c6c6c7]",
+                          errors.acceptedXlm ? "ring-1 ring-[#93000a]" : "",
                         ].join(" ")}
                       >
-                        verified
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span
+                            className={[
+                              "material-symbols-outlined text-[18px]",
+                              field.value ? "text-[#ff5451]" : "text-[#c6c6c7]",
+                            ].join(" ")}
+                          >
+                            verified
+                          </span>
+                          <span className="truncate font-mono text-[11px]">
+                            XLM (Native)
+                          </span>
+                        </span>
+                        <span
+                          className={[
+                            "material-symbols-outlined text-[18px]",
+                            field.value ? "text-[#ffb3ad]" : "text-[#3a3939]",
+                          ].join(" ")}
+                        >
+                          {field.value ? "check_circle" : "radio_button_unchecked"}
+                        </span>
                       </span>
-                      <span className="truncate font-mono text-[11px]">
-                        XLM (Native)
-                      </span>
-                    </span>
-                    <span
-                      className={[
-                        "material-symbols-outlined text-[18px]",
-                        form.acceptedXlm ? "text-[#ffb3ad]" : "text-[#3a3939]",
-                      ].join(" ")}
-                    >
-                      {form.acceptedXlm ? "check_circle" : "radio_button_unchecked"}
-                    </span>
-                  </span>
-                </label>
+                    </label>
+                  )}
+                />
 
-                <label className="cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.acceptedUsdc}
-                    onChange={(event) =>
-                      updateField("acceptedUsdc", event.target.checked)
-                    }
-                    className="peer sr-only"
-                  />
-                  <span
-                    className={[
-                      "flex items-center justify-between gap-2 rounded-lg p-2.5 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451]",
-                      form.acceptedUsdc
-                        ? "bg-[#353534] text-[#f3f0ee]"
-                        : "bg-[#201f1f] text-[#c6c6c7]",
-                    ].join(" ")}
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
+                <Controller
+                  control={control}
+                  name="acceptedUsdc"
+                  render={({ field }) => (
+                    <label className="cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(event) =>
+                          field.onChange(event.target.checked)
+                        }
+                        aria-invalid={Boolean(errors.acceptedXlm)}
+                        aria-describedby={
+                          errors.acceptedXlm ? "accepted-assets-error" : undefined
+                        }
+                        className="peer sr-only"
+                      />
                       <span
                         className={[
-                          "material-symbols-outlined text-[18px]",
-                          form.acceptedUsdc ? "text-[#ff5451]" : "text-[#c6c6c7]",
+                          "flex items-center justify-between gap-2 rounded-lg p-2.5 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451]",
+                          field.value
+                            ? "bg-[#353534] text-[#f3f0ee]"
+                            : "bg-[#201f1f] text-[#c6c6c7]",
+                          errors.acceptedXlm ? "ring-1 ring-[#93000a]" : "",
                         ].join(" ")}
                       >
-                        attach_money
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span
+                            className={[
+                              "material-symbols-outlined text-[18px]",
+                              field.value ? "text-[#ff5451]" : "text-[#c6c6c7]",
+                            ].join(" ")}
+                          >
+                            attach_money
+                          </span>
+                          <span className="truncate font-mono text-[11px]">
+                            USDC
+                          </span>
+                        </span>
+                        <span
+                          className={[
+                            "material-symbols-outlined text-[18px]",
+                            field.value ? "text-[#ffb3ad]" : "text-[#3a3939]",
+                          ].join(" ")}
+                        >
+                          {field.value
+                            ? "check_circle"
+                            : "radio_button_unchecked"}
+                        </span>
                       </span>
-                      <span className="truncate font-mono text-[11px]">USDC</span>
-                    </span>
-                    <span
-                      className={[
-                        "material-symbols-outlined text-[18px]",
-                        form.acceptedUsdc ? "text-[#ffb3ad]" : "text-[#3a3939]",
-                      ].join(" ")}
-                    >
-                      {form.acceptedUsdc
-                        ? "check_circle"
-                        : "radio_button_unchecked"}
-                    </span>
-                  </span>
-                </label>
+                    </label>
+                  )}
+                />
               </div>
+              <FieldError
+                id="accepted-assets-error"
+                message={errors.acceptedXlm?.message}
+              />
             </div>
           </FormSection>
 
@@ -831,26 +945,34 @@ export default function CreateEventPage() {
                 </span>
               </div>
               <label className="relative inline-flex cursor-pointer items-center">
-                <input
-                  id="self-refund"
-                  type="checkbox"
-                  role="switch"
-                  checked={form.selfRefund}
-                  onChange={(event) =>
-                    updateField("selfRefund", event.target.checked)
-                  }
-                  className="peer sr-only"
+                <Controller
+                  control={control}
+                  name="selfRefund"
+                  render={({ field }) => (
+                    <>
+                      <input
+                        id="self-refund"
+                        type="checkbox"
+                        role="switch"
+                        checked={field.value}
+                        onChange={(event) =>
+                          field.onChange(event.target.checked)
+                        }
+                        className="peer sr-only"
+                      />
+                      <span
+                        className={[
+                          "flex h-6 w-12 items-center rounded-full p-0.5 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#0e0e0e]",
+                          field.value
+                            ? "justify-end bg-[#ff5451] shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                            : "justify-start bg-[#353534]",
+                        ].join(" ")}
+                      >
+                        <span className="h-5 w-5 rounded-full bg-[#e5e2e1] shadow-sm" />
+                      </span>
+                    </>
+                  )}
                 />
-                <span
-                  className={[
-                    "flex h-6 w-12 items-center rounded-full p-0.5 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff5451] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#0e0e0e]",
-                    form.selfRefund
-                      ? "justify-end bg-[#ff5451] shadow-[0_0_12px_rgba(239,68,68,0.4)]"
-                      : "justify-start bg-[#353534]",
-                  ].join(" ")}
-                >
-                  <span className="h-5 w-5 rounded-full bg-[#e5e2e1] shadow-sm" />
-                </span>
               </label>
             </div>
 
@@ -861,15 +983,21 @@ export default function CreateEventPage() {
               >
                 Refund Deadline Threshold
               </label>
-              <div className="flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2">
+              <div
+                className={[
+                  "flex items-center gap-2 rounded-lg bg-[#0e0e0e] p-2",
+                  errors.refundDeadline ? "ring-1 ring-[#93000a]" : "",
+                ].join(" ")}
+              >
                 <span className="material-symbols-outlined text-[18px] text-[#ffb3ad]">
                   timer
                 </span>
                 <select
                   id="refund-deadline"
-                  value={form.refundDeadline}
-                  onChange={(event) =>
-                    updateField("refundDeadline", event.target.value)
+                  {...register("refundDeadline")}
+                  aria-invalid={Boolean(errors.refundDeadline)}
+                  aria-describedby={
+                    errors.refundDeadline ? "refund-deadline-error" : undefined
                   }
                   className="w-full appearance-none bg-transparent font-mono text-[12px] text-[#f3f0ee] focus:outline-none"
                 >
@@ -887,6 +1015,10 @@ export default function CreateEventPage() {
                   expand_more
                 </span>
               </div>
+              <FieldError
+                id="refund-deadline-error"
+                message={errors.refundDeadline?.message}
+              />
             </div>
 
             <div className="flex items-start gap-2 rounded-lg bg-[#0e0e0e] p-3">

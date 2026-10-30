@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
@@ -327,10 +328,13 @@ export default function CreateEventPage() {
       <header className="pt-safe fixed inset-x-0 top-0 z-50 bg-[#131313]/80 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[560px] items-center justify-between gap-2 px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <img
+            <Image
               alt="Trea Logo"
               className="h-8 w-auto object-contain"
               src={TREA_LOGO}
+              width={32}
+              height={32}
+              unoptimized
             />
             <span className="text-[16px] font-semibold tracking-tight text-[#e5e2e1]">
               Trea
@@ -343,10 +347,12 @@ export default function CreateEventPage() {
           </div>
 
           <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full ring-1 ring-white/10">
-            <img
+            <Image
               alt="Profile"
-              className="h-full w-full object-cover"
+              className="object-cover"
               src={PROFILE_IMAGE}
+              fill
+              sizes="32px"
             />
             <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#131313] bg-[#ff5451]" />
           </div>
@@ -496,11 +502,14 @@ export default function CreateEventPage() {
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#c6c6c7]">
                 Cover Image Asset
               </span>
-              <div className="group relative w-full overflow-hidden rounded-xl bg-[#0e0e0e]">
-                <img
-                  src={coverImageUrl}
+              <div className="group relative h-36 w-full overflow-hidden rounded-xl bg-[#0e0e0e]">
+                <Image
+                  src={coverImageUrl || DEFAULT_COVER_IMAGE}
                   alt="Event cover preview"
-                  className="h-36 w-full object-cover opacity-80 transition-opacity group-hover:opacity-95"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 560px"
+                  unoptimized
+                  className="object-cover opacity-80 transition-opacity group-hover:opacity-95"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-transparent to-transparent" />
                 <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-lg bg-[#201f1f]/90 p-2 backdrop-blur-md">

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button, buttonClassName } from "@/components/Button";
@@ -226,10 +227,12 @@ function LiveEventCard({ event }: { event: LiveEvent }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl bg-[#1f1f1f] shadow-xl">
       <div className="relative h-44 w-full overflow-hidden">
-        <img
+        <Image
           src={event.image}
           alt={event.title}
-          className="h-full w-full object-cover"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 384px"
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1f1f1f] via-[#1f1f1f]/60 to-transparent" />
 
@@ -428,10 +431,12 @@ function DraftEventCard({ event }: { event: DraftEvent }) {
 
         <div className="flex items-start gap-4">
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-            <img
+            <Image
               src={event.image}
               alt={event.title}
-              className="h-full w-full object-cover"
+              fill
+              sizes="80px"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-[#353534]/30" />
           </div>
@@ -478,10 +483,13 @@ export default function OrganiserDashboardPage() {
       <header className="pt-safe fixed inset-x-0 top-0 z-50 bg-[#131313]/80 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <img
+            <Image
               alt="Trea Logo"
               className="h-8 w-auto object-contain"
               src="https://lh3.googleusercontent.com/aida/AEtjO1Ww40inGHjn46emaG6LBQY79iEHtmTgVhg8v6vqY3WwChhc1qPp14wKDGsNMV36DVrsONIOD119spGawqKWRz6G9ezqfkZG9Na8fLhJHqaSuiuFSzehriQ9wfKuc5IdOV51Mp0ySF0_DLf44uYaZhOiHI1wss09H5bmiTM2-_JuRFmEVeA8jEzQiwh8o5Jde_vxkZ_jg8IK7UjiwA612NzvF_fX6VTEXUqhAXocRyRj6AluZQHM18yF0jw"
+              width={32}
+              height={32}
+              unoptimized
             />
             <span className="text-[16px] font-semibold tracking-tight text-[#e5e2e1]">
               Trea
@@ -495,10 +503,12 @@ export default function OrganiserDashboardPage() {
 
           <div className="flex items-center justify-end">
             <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full ring-1 ring-white/10">
-              <img
+              <Image
                 alt="Profile"
-                className="h-full w-full object-cover"
+                className="object-cover"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFuXodJxvy-va-78PTdiU8ZhKQdHyJwQNqNFdepsOWnUrq659A3aTmf7VBKewRz1Tv6NauE_5vI8gnVfo7SP3O_hkMHlTTrXnfSBuJcS6CoLuhoLo3043VL5ngYQ92abrNW0b_0lKFuIRAJmI3WdBX3fm3vNsEpfMcQmm0A8-1iaJZ9MG-_siQsr6lnhHu3QoLo8urCkVnNInmNoEj4cEtpxrHwmgrhw4RZrejct814COaDYLwlHix"
+                fill
+                sizes="32px"
               />
               <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#131313] bg-[#ff5451]" />
             </div>

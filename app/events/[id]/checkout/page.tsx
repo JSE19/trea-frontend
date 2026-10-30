@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -225,9 +226,11 @@ export default function CheckoutPage() {
                     </h2>
                     <p className="mt-2 text-sm text-[#d7d2cf]">{event.summary}</p>
                   </div>
-                  <img
+                  <Image
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD3PyOSBsu7GFwail5tFeV3vfXECmRLu1awHhUazLF-OouIE23gjNg3QXw-ValRo3RotD1X55a-iBoavdYZsu0I5kG3T3xLd9bP3kWVqimymnUe9N_h3Y9AdDXP_Yrg0qsPXyzIwi2Ex6riYUGLJQ62lJHOIrbf8OLSbMxd-XTXCEQUeE547s41yViTSfiWkJCFhNplWw5OFp53sTbJyDW75RlpVoec0FDTV0Vt4Gup8vhvpEb4l9c"
                     alt={event.title}
+                    width={80}
+                    height={80}
                     className="h-20 w-20 rounded-2xl object-cover"
                   />
                 </div>

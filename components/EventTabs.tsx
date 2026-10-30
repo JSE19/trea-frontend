@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -135,9 +136,11 @@ export function EventTabs({
                 key={speaker.name}
                 className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-3 text-center"
               >
-                <img
+                <Image
                   src={speaker.image}
                   alt={speaker.name}
+                  width={64}
+                  height={64}
                   className="mx-auto h-16 w-16 rounded-full object-cover ring-2 ring-[#2a2a2a]"
                 />
                 <div className="mt-3">
@@ -206,10 +209,12 @@ export function EventTabs({
                 key={photo.image}
                 className="relative aspect-square overflow-hidden rounded-xl bg-[#2a2a2a]"
               >
-                <img
+                <Image
                   src={photo.image}
                   alt={photo.alt}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 50vw, 33vw"
+                  className="object-cover"
                 />
 
                 {isLast ? (

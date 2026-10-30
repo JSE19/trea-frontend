@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventTabs, type EventDetail } from "@/components/EventTabs";
@@ -118,9 +119,12 @@ export default async function EventPage({
             >
               <span className="text-xl">←</span>
             </Link>
-            <img
+            <Image
               src="https://lh3.googleusercontent.com/aida/AEtjO1Ww40inGHjn46emaG6LBQY79iEHtmTgVhg8v6vqY3WwChhc1qPp14wKDGsNMV36DVrsONIOD119spGawqKWRz6G9ezqfkZG9Na8fLhJHqaSuiuFSzehriQ9wfKuc5IdOV51Mp0ySF0_DLf44uYaZhOiHI1wss09H5bmiTM2-_JuRFmEVeA8jEzQiwh8o5Jde_vxkZ_jg8IK7UjiwA612NzvF_fX6VTEXUqhAXocRyRj6AluZQHM18yF0jw"
               alt="Trea Logo"
+              width={28}
+              height={28}
+              unoptimized
               className="h-7 w-auto object-contain"
             />
           </div>
@@ -129,11 +133,13 @@ export default async function EventPage({
             Event Detail
           </h1>
 
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ring-1 ring-white/10">
-            <img
+          <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ring-1 ring-white/10">
+            <Image
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFuXodJxvy-va-78PTdiU8ZhKQdHyJwQNqNFdepsOWnUrq659A3aTmf7VBKewRz1Tv6NauE_5vI8gnVfo7SP3O_hkMHlTTrXnfSBuJcS6CoLuhoLo3043VL5ngYQ92abrNW0b_0lKFuIRAJmI3WdBX3fm3vNsEpfMcQmm0A8-1iaJZ9MG-_siQsr6lnhHu3QoLo8urCkVnNInmNoEj4cEtpxrHwmgrhw4RZrejct814COaDYLwlHix"
               alt="Profile"
-              className="h-full w-full object-cover"
+              fill
+              sizes="36px"
+              className="object-cover"
             />
           </div>
         </div>
@@ -142,10 +148,12 @@ export default async function EventPage({
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-20 sm:px-6 lg:px-8">
         <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#1b1b1b] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
           <div className="relative h-[280px] sm:h-[350px] md:h-[420px]">
-            <img
+            <Image
               src={event.coverImage}
               alt={event.title}
-              className="h-full w-full object-cover"
+              fill
+              sizes="(max-width: 1024px) 100vw, 1152px"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-[#131313]/40 to-transparent" />
             <div className="absolute inset-x-4 top-4 flex items-center justify-between">

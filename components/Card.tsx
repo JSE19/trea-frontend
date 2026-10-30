@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { PropsWithChildren, ReactNode } from "react";
 
 type CardProps = PropsWithChildren<{
@@ -50,11 +51,13 @@ export function Card({
             </div>
 
             {imageSrc ? (
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-                <img
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+                <Image
                   src={imageSrc}
                   alt={imageAlt}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  fill
+                  sizes="64px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
             ) : null}
@@ -81,10 +84,12 @@ export function Card({
     >
       {imageSrc ? (
         <div className="relative h-44 overflow-hidden">
-          <img
+          <Image
             src={imageSrc}
             alt={imageAlt}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1d1d1d] via-transparent to-transparent" />
         </div>
